@@ -30,12 +30,15 @@ The DB can be accessed via implemented python script `db.py`.
 
 The data is uploaded to the database using the `upload.py` script. The script takes the following arguments: 
 
-- `--data_path` - path to the data file (.mat)
-- `--recording_name` - name of the recording
-- `--sampling_rate` - sampling rate of the recording
-- `--recording_date` - date of the recording
-- `--recording_duration` - duration of the recording
-- `--channel_names` - names of the channels (comma separated)
+<tt>`upload.py [-h] [-d description] [-n name] [--date DATE] [-c channels] file data_key sampling_rate`</tt>
+
+- `file` - path to the data (`mat`) file
+- `data_key` - key of the data in the `mat` file (e.g. `data`)
+- `sampling_rate` - sampling rate of the recording
+- `--name` - name of the recording (e.g. `eyes_closed`)
+- `--date` - date of the recording (format: `YYYY-MM-DD HH:MM:SS`, default: current date and time)
+<!-- - `--recording_duration` - duration of the recording -->
+- `--channels` - names of the channels (comma separated) (e.g. `Fp1,Fp2,O1`)
 
 The script parses the data file and uploads the data to the database. The script also creates a new recording and channel entries in the database
 
