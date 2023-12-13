@@ -52,3 +52,28 @@ The data is then downloaded from the database and analyzed using `jupyter` noteb
     - ICA is applied to the data
     - Functional connectivity features are extracted from the data
     - The features are visualized
+
+### 13. 12. 2023 - presentation
+
+- [x] 1. Data collection
+- [x] 2. Data storage
+- [ ] 4. Data analysis
+  - [x] plot raw data
+  - [x] plot filtered data
+  - [x] plot ICA components
+  - [x] plot functional connectivity features
+  - [ ] use shorter time intervals for analysis (e.g. 1s)
+  - [ ] determinise ICA components
+- [ ] 3. GUI (upload, download, analysis)
+  
+
+
+
+- Presented usage, store, analysis, visualization
+- They liked the DB solution
+- The ICA should be determinised (to prevent confusion between the signs of the componentss)
+- They suggested to plot shorter time intervals (e.g. 1s) for EEG data and ICA components
+- prof. Malik asked whether the method used to calculate the connectivity is *coherence*? DETERMINE THIS
+- The max measured connectivity was aprox. 0.2 which is low to be considered as as *connected* (Malik)
+- Also find out why in the eyes closed the connectivity is higher between occipital and frontal lobes??
+- IMPLEMENT THE GUI
