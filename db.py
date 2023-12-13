@@ -79,7 +79,7 @@ class Sample(Base):
 Base.metadata.create_all(engine)
 
 
-def load_recoding(session, id: int, pbar_provider) -> Tuple(List[str],List[int]):
+def load_recoding(session, id: int, pbar_provider) -> tuple[List[str],List[int]]:
     """Function that loads the recorging from DB and returns channel info and data.
     
 Arguments: session {sqlalchemy.orm.session.Session} -- DB session

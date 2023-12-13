@@ -69,7 +69,7 @@ data_EC_filter = data_EC[:len(channels), :]
 Session = sessionmaker(bind=engine)
 session = Session(autoflush=False)
 
-recording = Recording(name="Test recording EC", description="Eyes closed", sampling_rate=2048)
+recording = Recording(name=args.name, description=args.description, sampling_rate=args.samplig_rate, created_at=args.date)
 session.add(recording)
 
 

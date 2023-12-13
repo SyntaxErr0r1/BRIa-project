@@ -50,6 +50,5 @@ The data is then downloaded from the database and analyzed using `jupyter` noteb
     - Data is filtered using a bandpass filter
     - Data is segmented into epochs
     - ICA is applied to the data
-    - CCA is applied to the data
     - Functional connectivity features are extracted from the data
     - The features are visualized
