@@ -1,3 +1,4 @@
+# Author: Juraj Dedič, xdedic07
 # Experiment class sqlalchemy model
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey

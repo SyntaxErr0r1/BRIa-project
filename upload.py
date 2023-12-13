@@ -1,3 +1,5 @@
+# Author: Juraj Dedič, xdedic07
+
 from scipy.io import loadmat
 import mne
 from db import engine, DataChannel, Sample, Recording
