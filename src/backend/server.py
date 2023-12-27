@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import os
 
 plt.switch_backend('agg')
 
@@ -44,7 +45,7 @@ modules = [
         'id': 2,
         'name': 'ICA',
         'description': 'This module applies ICA to the data',
-        'componentsPlotUrl': '/static/3/components.png',
+        'componentsPlotUrl': '/static/2/components.png',
         'removedComponents': [1, 2, 3],
         'plotUrl': '/static/2/plot.png',
         'type': 'ica',
@@ -53,6 +54,19 @@ modules = [
         'statusProcessing': False,
     },
 ]
+
+def create_dir_structure():
+    """Creates directory structure for storing static files"""
+    try:
+        os.makedirs('./static')
+    except:
+        pass
+
+    for module in modules:
+        try:
+            os.makedirs('./static/'+str(module['id']))
+        except:
+            pass
 
 def stringify_modules(modules):
     mod_copy = deepcopy(modules)
@@ -101,15 +115,41 @@ async def process_module_loadData(data,module) -> bool:
 
 async def process_module_highPassFilter(data,module) -> bool:
     # output data of previous module
-    module['dataOutput'] = data
 
-    print("DATA TYPE",type(data))
-
-    print("DATA SHAPE",len(data))
+    data = data.filter(l_freq=1.0, h_freq=None)
 
     # save plot to static/1/plot.png
     fig = data.plot( title="Before", scalings='auto');
     fig.savefig('./static/1/plot.png')
+
+    module['dataOutput'] = data
+
+    return module
+
+async def process_module_ica(data,module) -> bool:
+    # output data of previous module
+    raw_tmp = data
+    raw_tmp.filter(l_freq=1, h_freq=None)
+    ica = mne.preprocessing.ICA(method="picard") 
+    fit_params={"extended": True}
+    random_state=1
+    ica.fit(raw_tmp)
+
+    fig = ica.plot_components(inst=raw_tmp, picks=range(25));
+    try:
+        fig.savefig('./static/2/components.png')
+    except:
+        print("Error saving components plot")
+
+
+    ica.exclude = [0,1,2,9,10,17]
+    raw_corrected = raw_tmp
+
+    ica.apply(raw_corrected)
+    fig = raw_corrected.plot(n_channels=32, title="After", scalings=dict(eeg=0.02));
+    fig.savefig('./static/2/plot.png')
+
+    module['dataOutput'] = raw_corrected
 
     return module
 
@@ -140,7 +180,7 @@ async def process_module(module_id):
     elif module['type'] == 'highPassFilter':
         result = await process_module_highPassFilter(data,module)
     elif module['type'] == 'ica':
-        pass
+        result = await process_module_ica(data,module)
 
     result['statusProcessing'] = False
     modules[module_id] = result
@@ -163,4 +203,5 @@ def set_modules():
 
 
 if __name__ == '__main__':
-   app.run(port=8888, debug=True)
+    create_dir_structure()
+    app.run(port=8888, debug=True)
