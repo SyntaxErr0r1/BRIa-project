@@ -112,3 +112,41 @@ pbar_provider {function} -- function that returns a progress bar object (e.g. tq
         all_channels_data.append(channel_data)
 
     return channel_names, all_channels_data
+
+
+async def load_recording_async(session, id: int, pbar_provider) -> dict:
+    """Function that loads the recorging from DB and returns channel info and data.
+    
+Arguments: session {sqlalchemy.orm.session.Session} -- DB session
+id {int} -- ID of the recording to load
+pbar_provider {function} -- function that returns a progress bar object (e.g. tqdm)"""
+    
+    # get recording
+    recording = session.query(Recording).filter_by(id=id).first()
+
+    # get all data channels
+    data_channels = session.query(DataChannel).filter_by(recording_id=id).all()
+
+    # get channel names
+    channel_names = []
+    for data_channel in data_channels:
+        channel_names.append(data_channel.channel_name)
+
+    if pbar_provider is not None:
+        pbar = pbar_provider(data_channels, desc='Loading channel data from DB', unit='channel')
+    else:
+        pbar = data_channels
+    # get channel data
+    all_channels_data = []
+    for data_channel in pbar:
+        channel_data = []
+
+        for sample in data_channel.samples:
+            channel_data.append(sample.value)
+        all_channels_data.append(channel_data)
+
+    return {
+        'channels':channel_names,
+        'data': all_channels_data
+    }
+
