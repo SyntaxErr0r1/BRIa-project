@@ -8,6 +8,16 @@ const routes = [
         name: "Home",
         component: HelloWorld,
     },
+    {
+      path: "/upload",
+      name: "UploadData",
+      component: () => import("../views/UploadData.vue")
+    },
+    {
+      path: "/load-data",
+      name: "LoadData",
+      component: () => import("../views/LoadData.vue")
+    }
 ]
 
 const router = createRouter({

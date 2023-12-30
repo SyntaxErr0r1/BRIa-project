@@ -5,7 +5,9 @@
         <h3>EEG Analysis Tool</h3>
     </template>
     <template #end>
+      <router-link to="upload">
         <Button label="New Data" icon="pi pi-power-off" />
+      </router-link>
     </template>
   </Menubar>
 
@@ -13,11 +15,11 @@
     <SplitterPanel class="flex align-items-center justify-content-center" :size="25" :minSize="10"> 
       <PanelMenu :model="sideItems">
         <template #item="{ item }">
-          <router-link v-if="item.route" :to="item.route" custom>
-            <a class="side-menu-item">
+          <router-link v-if="item.route" :to="item.route">
+            <span class="side-menu-item">
                 <span :class="['ml-2', { 'font-semibold': item.items }]"><strong>{{ item.label }}</strong></span>
                 <Checkbox class="ml-auto" v-model="item.enabled" :binary="true" />
-            </a>
+            </span>
           </router-link>
         </template>
       </PanelMenu>
@@ -58,8 +60,16 @@ export default {
     RouterLink,
     RouterView
   },
+  methods: {
+    loadDatasets: function() {
+      this.$store.dispatch('loadDatasets');
+    }
+  },
   data: () => {
     return {
+
+      datasets: [],
+
       sideItems: [
         {
           label: 'Load Data',
@@ -146,6 +156,7 @@ body > *{
   text-decoration: none;
   transition: all 0.2s ease-in-out;
   justify-content: space-between;
+  text-decoration: none;
 }
 
 </style>

@@ -9,12 +9,14 @@ import VueRouter from 'vue-router'
 import router from "./router"
 
 import Ripple from 'vuetify/lib/directives/ripple';
+import store from './store'
 
 
 let app = createApp(App)
 
 app.use(router)
 app.use(PrimeVue, {ripple: true})
+app.use(store)
 app.component('Menubar', Menubar)
 app.directive('ripple', Ripple)
 

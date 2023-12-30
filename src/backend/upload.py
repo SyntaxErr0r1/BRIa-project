@@ -2,7 +2,7 @@
 
 from scipy.io import loadmat
 import mne
-from db import engine, DataChannel, Sample, Recording
+from backend.db import engine, DataChannel, Sample, Recording
 from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
 import argparse

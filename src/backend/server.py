@@ -3,7 +3,7 @@ from flask import Flask, jsonify, request
 from copy import deepcopy
 
 import mne
-from db import engine, Base, load_recording_async
+from db import engine, Base, load_recording_async, Recording
 from sqlalchemy.orm import sessionmaker
 import numpy as np
 import matplotlib.pyplot as plt
@@ -146,7 +146,7 @@ async def process_module_ica(data,module) -> bool:
     raw_corrected = raw_tmp
 
     ica.apply(raw_corrected)
-    fig = raw_corrected.plot(n_channels=32, title="After", scalings=dict(eeg=0.02));
+    fig = raw_corrected.plot(n_channels=32, title="After", scalings='auto');
     fig.savefig('./static/2/plot.png')
 
     module['dataOutput'] = raw_corrected
@@ -201,7 +201,14 @@ def set_modules():
     print(modules)
     return stringify_modules(modules)
 
+@app.route('/recordings', methods=['GET'])
+@app.route('/recordings/', methods=['GET'])
+def get_recordings():
+    recordings = session.query(Recording).all()
+    recordings = [recording.to_dict() for recording in recordings]
+    return jsonify(recordings)
 
 if __name__ == '__main__':
     create_dir_structure()
+    app.url_map.strict_slashes = False
     app.run(port=8888, debug=True)

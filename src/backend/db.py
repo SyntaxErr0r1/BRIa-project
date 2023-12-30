@@ -53,6 +53,17 @@ class Recording(Base):
     # one to many relationship with data channel
     data_channels = relationship("DataChannel", back_populates="recording")
 
+    # to dict
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'created_at': self.created_at,
+            'sampling_rate': self.sampling_rate,
+            'duration': self.duration
+        }
+
 class DataChannel(Base):
     __tablename__ = 'data_channel'
     id = mapped_column(Integer, primary_key=True)
