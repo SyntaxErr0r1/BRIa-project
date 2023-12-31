@@ -1,19 +1,25 @@
 import json
 from flask import Flask, jsonify, request
 from copy import deepcopy
-
+from scipy.io import loadmat
 import mne
-from db import engine, Base, load_recording_async, Recording
+from db import engine, Base, load_recording_async, Recording, DataChannel, Sample
 from sqlalchemy.orm import sessionmaker
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import os
+from io import BufferedReader, BytesIO
+from flask import Flask, flash, request, redirect, url_for
+from werkzeug.utils import secure_filename
+from datetime import datetime
+
+UPLOAD_FOLDER = './uploads'
+ALLOWED_EXTENSIONS = {'mat'}
 
 plt.switch_backend('agg')
 
 Session = sessionmaker(bind=engine)
-session = Session()
 
 app = Flask(__name__)
 
@@ -62,6 +68,11 @@ def create_dir_structure():
     except:
         pass
 
+    try:
+        os.makedirs('./uploads')
+    except:
+        pass
+
     for module in modules:
         try:
             os.makedirs('./static/'+str(module['id']))
@@ -76,6 +87,7 @@ def stringify_modules(modules):
     return jsonify(mod_copy)
 
 async def process_module_loadData(data,module) -> bool:
+    session = Session()
     dataId : int = module['dataId']
     # output data of previous module
 
@@ -204,11 +216,105 @@ def set_modules():
 @app.route('/recordings', methods=['GET'])
 @app.route('/recordings/', methods=['GET'])
 def get_recordings():
+    session = Session()
     recordings = session.query(Recording).all()
     recordings = [recording.to_dict() for recording in recordings]
     return jsonify(recordings)
 
+@app.route('/recordings/<int:recording_id>', methods=['DELETE'])
+def delete_recording(recording_id):
+    session = Session()
+    session.query(Recording).filter(Recording.id == recording_id).delete()
+    session.commit()
+    return jsonify({'success': True}) 
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def parse_channels(channels) -> list | None:
+    try:
+        channels = channels.split(',')
+        channels = [channel.strip() for channel in channels]
+        channels = [element.strip("'") for element in channels]
+        channels = [element.strip('"') for element in channels]
+        return channels
+    except:
+        return None
+
+@app.route('/recordings/', methods=['POST'])
+def upload_file():
+
+    warning = None
+    error = None
+
+    # check if the post request has the file part
+    if 'file' not in request.files:
+        flash('No file part')
+        return jsonify({'success': False, 'error': 'No file part', 'warning': warning})
+    file = request.files['file']
+    # If the user does not select a file, the browser submits an
+    # empty file without a filename.
+    if file.filename == '':
+        flash('No selected file')
+        return jsonify({'success': False, 'error': 'No selected file', 'warning': warning})
+    if file and allowed_file(file.filename):
+        # filename = secure_filename(file.filename)
+        # file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    
+        print("form",request.form)
+        data_key = request.form['data_key']
+        name = request.form['name']
+        description = request.form['description']
+        sampling_rate = request.form['sampling_rate']
+
+        file.seek(0)
+        file_contents = file.read()
+        print("File contents",len(file_contents))
+
+        bytes_io = BytesIO(file_contents)
+        
+        bytes_io.seek(0)
+        data = loadmat(bytes_io)[data_key]
+        print("Data length",len(data))
+
+        channels = parse_channels(request.form['channels'])
+
+        if(len(channels) > len(data)):
+            return jsonify({'success': False, 'error': 'Too many channels specified ('+str(len(channels))+'). Dataset has only '+str(len(data))+' channels'})
+        elif(len(channels) < len(data)):
+            warning = ('Specified only '+str(len(channels))+', but the dataset has '+str(len(data))+' channels (will be truncated)')
+
+        session = Session(autoflush=False)
+
+        recording = Recording(name=name, description=description, sampling_rate=sampling_rate, created_at=None)
+        session.add(recording)
+
+
+        for i in tqdm(range(0, len(channels)), desc='Uploading channel data to DB', unit='channel'):
+            channel_name = channels[i]
+
+            data_channel = DataChannel(channel_name=channel_name, recording=recording)
+            session.add(data_channel)
+            session.flush()
+
+            data_dicts = []
+            for val in data[i]:
+                data_dicts.append(dict(value=float(val), data_channel_id=data_channel.id))
+            
+            session.bulk_insert_mappings(Sample, data_dicts)
+
+        print('Commiting changes to DB...')
+        session.commit()
+
+
+        return jsonify({'success': True, 'warning': warning, 'error': error})
+
+    return jsonify({'success': False, 'error': 'Unknown error', 'warning': warning})
+
+
 if __name__ == '__main__':
     create_dir_structure()
     app.url_map.strict_slashes = False
+    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
     app.run(port=8888, debug=True)

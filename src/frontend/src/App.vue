@@ -4,9 +4,16 @@
     <template #start>
         <h3>EEG Analysis Tool</h3>
     </template>
+    <template #item="{ item }">
+      <router-link v-if="item.route" :to="item.route">
+        <span class="side-menu-item">
+            <span :class="['ml-2', { 'font-semibold': item.items }]"><strong>{{ item.label }}</strong></span>
+        </span>
+      </router-link>
+    </template>
     <template #end>
-      <router-link to="upload">
-        <Button label="New Data" icon="pi pi-power-off" />
+      <router-link to="/upload-data">
+        <Button label="New Data" icon="pi pi-plus" class="p-mr-2" />
       </router-link>
     </template>
   </Menubar>
@@ -29,7 +36,7 @@
     </SplitterPanel>
   </Splitter>
 
-  
+  <Toast></Toast>
 </template>
 
 <script>
@@ -44,6 +51,8 @@ import Ripple from 'primevue/ripple';
 import Checkbox from 'primevue/checkbox';
 import RouterLink from 'vue-router';
 import RouterView from 'vue-router';
+import Toast from 'primevue/toast';
+import 'primeicons/primeicons.css'
 
 export default {
   name: 'App',
@@ -58,7 +67,8 @@ export default {
     Ripple,
     Checkbox,
     RouterLink,
-    RouterView
+    RouterView,
+    Toast
   },
   methods: {
     loadDatasets: function() {
@@ -85,41 +95,10 @@ export default {
 
       items: [
         {
-          label: 'Mark Completed',
-          icon: 'pi pi-fw pi-check-square',
-          command: () => {
-            this.$toast.add({
-              severity: 'success',
-              summary: 'Success',
-              detail: 'Marked Completed',
-              life: 3000
-            });
-          }
+          label: 'Manage Recordings',
+          icon: 'pi pi-fw pi-file',
+          route: '/data-manager'
         },
-        {
-          label: 'Delete',
-          icon: 'pi pi-fw pi-trash',
-          command: () => {
-            this.$toast.add({
-              severity: 'warn',
-              summary: 'Delete',
-              detail: 'Deleted',
-              life: 3000
-            });
-          }
-        },
-        {
-          label: 'Quit',
-          icon: 'pi pi-fw pi-times',
-          command: () => {
-            this.$toast.add({
-              severity: 'error',
-              summary: 'Quit',
-              detail: 'Quit',
-              life: 3000
-            });
-          }
-        }
       ]
     }
   }

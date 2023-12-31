@@ -9,7 +9,7 @@ const routes = [
         component: HelloWorld,
     },
     {
-      path: "/upload",
+      path: "/upload-data",
       name: "UploadData",
       component: () => import("../views/UploadData.vue")
     },
@@ -17,6 +17,11 @@ const routes = [
       path: "/load-data",
       name: "LoadData",
       component: () => import("../views/LoadData.vue")
+    },
+    {
+      path: "/data-manager",
+      name: "DataManager",
+      component: () => import("../views/DataManager.vue")
     }
 ]
 

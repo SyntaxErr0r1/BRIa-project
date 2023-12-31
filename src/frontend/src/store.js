@@ -21,9 +21,27 @@ const store = createStore({
         }
     },
     actions: {
-        loadRecordings (context) {
+        async loadRecordings (context) {
             context.commit('loadRecordings')
-        }
+        },
+        async deleteRecording (context, recording) {
+            await axios.delete(`/recordings/${recording.id}`)
+            context.commit('loadRecordings')
+        },
+        async uploadRecording (context, recording) {
+            // res = await axios.post(`/recordings/`, recording, { headers: { 'Content-Type': 'multipart/form-data' } })
+            // context.commit('loadRecordings')
+            return new Promise((resolve, reject) => {
+                axios.post(`/recordings/`, recording, { headers: { 'Content-Type': 'multipart/form-data' } })
+                    .then(response => {
+                        context.commit('loadRecordings')
+                        resolve(response)
+                    })
+                    .catch(error => {
+                        reject(error)
+                    })
+            })
+        },
     }
 })
 
