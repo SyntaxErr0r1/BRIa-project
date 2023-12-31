@@ -13,19 +13,23 @@ const store = createStore({
     state () {
         return {
             recordings: [],
+            modules: [],
         }
     },
     mutations: {
-        async loadRecordings (state, recordings) {
+        async loadRecordings (state) {
             state.recordings = await axios.get(`/recordings/`).then(response => response.data)
-        }
+        },
+        async loadModules (state) {
+            state.modules = await axios.get(`/modules/`).then(response => response.data).catch(error => console.log(error))
+        },
     },
     actions: {
         async loadRecordings (context) {
             context.commit('loadRecordings')
         },
-        async deleteRecording (context, recording) {
-            await axios.delete(`/recordings/${recording.id}`)
+        async deleteRecording (context, id) {
+            await axios.delete(`/recordings/${id}`)
             context.commit('loadRecordings')
         },
         async uploadRecording (context, recording) {
@@ -42,6 +46,20 @@ const store = createStore({
                     })
             })
         },
+        async loadModules (context) {
+            context.commit('loadModules')
+        },
+
+        async updateModule (context, module) {
+            await axios.post(`/modules/${module.id}/`, module)
+            context.commit('loadModules')
+        },
+
+        async processModule (context, module) {
+            await axios.post(`/modules/${module.id}/process/`)
+            context.commit('loadModules')
+        }
+        
     }
 })
 

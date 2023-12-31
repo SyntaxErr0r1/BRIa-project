@@ -9,7 +9,7 @@
             <Column field="action" header="Action">
                 <template #body="slotProps">
                     <!-- <Button icon="pi pi-play" class="p-button-rounded p-button-success p-mr-2" /> -->
-                    <Button icon="pi pi-trash" class="p-button p-button-danger" @click="deleteRecording(slotProps.rowData.id)" />
+                    <Button icon="pi pi-trash" class="p-button p-button-danger" @click="deleteRecording(slotProps.index)" />
                 </template>
             </Column>
         </DataTable>
@@ -35,9 +35,9 @@ export default {
     },
     name: 'DataManager',
     methods: {
-        deleteRecording: function(id) {
-
-            // this.$store.dispatch('deleteRecording', id);
+        deleteRecording: function(index) {
+            let id = this.recordings[index].id;
+            this.$store.dispatch('deleteRecording', id);
         }
     },
     computed: {

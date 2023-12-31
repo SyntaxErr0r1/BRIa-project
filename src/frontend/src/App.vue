@@ -87,10 +87,20 @@ export default {
           route: '/load-data'
         },
         {
-          label: 'Low Pass Filter',
+          label: 'High Pass Filter',
           enabled: true,
-          route: '/low-pass-filter'
+          route: '/high-pass'
         },
+        {
+          label: "ICA",
+          enabled: true,
+          route: '/ica'
+        },
+        {
+          label: "Connectivity",
+          enabled: true,
+          route: '/connectivity'
+        }
       ],
 
       items: [

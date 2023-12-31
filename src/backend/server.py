@@ -80,13 +80,23 @@ def create_dir_structure():
             pass
 
 def stringify_modules(modules):
-    mod_copy = deepcopy(modules)
-    for module in mod_copy:
+    """Converts modules to JSON string
+    :param modules: list of modules or single module"""
+
+    def stringify_module(module):
         module['dataOutput'] = None
+        return module
+
+    mod_copy = deepcopy(modules)
+    if isinstance(mod_copy, list):
+        for module in mod_copy:
+            stringify_module(module)
+    elif isinstance(mod_copy, dict):
+        stringify_module(mod_copy)
     
     return jsonify(mod_copy)
 
-async def process_module_loadData(data,module) -> bool:
+async def process_module_loadData(data, module) -> bool:
     session = Session()
     dataId : int = module['dataId']
     # output data of previous module
@@ -169,13 +179,18 @@ def process_modules():
     for module in modules:
         process_module(module['id'])
 
-@app.route('/modules/<int:module_id>', methods=['PUT'])
+@app.route('/modules/<int:module_id>/', methods=['POST'])
 def update_module(module_id):
     module = request.get_json()
-    modules[module_id - 1] = module
+
+    # set all keys of module to the new values (except id and dataOutput)
+    for key in module:
+        if key != 'id' and key != 'dataOutput' and key != 'statusProcessing':
+            modules[module_id][key] = module[key]
+    # modules[module_id] = module
     return stringify_modules(module)
 
-@app.route('/modules/<int:module_id>/process', methods=['POST'])
+@app.route('/modules/<int:module_id>/process/', methods=['POST'])
 async def process_module(module_id):
 
     if module_id >= 1:
@@ -200,14 +215,17 @@ async def process_module(module_id):
     return stringify_modules(modules)
 
 @app.route('/modules/<int:module_id>', methods=['GET'])
+@app.route('/modules/<int:module_id>/', methods=['GET'])
 def get_module(module_id):
-    return stringify_modules(modules[module_id - 1])
+    return stringify_modules(modules[module_id])
 
 @app.route('/modules', methods=['GET'])
+@app.route('/modules/', methods=['GET'])
 def get_modules():
     return stringify_modules(modules)
 
 @app.route('/modules', methods=['POST'])
+@app.route('/modules/', methods=['POST'])
 def set_modules():
     modules = request.get_json()
     print(modules)
@@ -224,7 +242,14 @@ def get_recordings():
 @app.route('/recordings/<int:recording_id>', methods=['DELETE'])
 def delete_recording(recording_id):
     session = Session()
-    session.query(Recording).filter(Recording.id == recording_id).delete()
+
+    print("Deleting recording",recording_id)
+
+    # delete all samples and data channels of the recording
+    session.query(Sample).filter(Sample.data_channel.has(recording_id=recording_id)).delete(synchronize_session=False)
+    session.query(DataChannel).filter(DataChannel.recording_id==recording_id).delete(synchronize_session=False)
+    session.query(Recording).filter(Recording.id==recording_id).delete(synchronize_session=False)
+
     session.commit()
     return jsonify({'success': True}) 
 
