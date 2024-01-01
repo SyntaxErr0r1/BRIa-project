@@ -45,7 +45,6 @@ export default {
     },
     computed: {
         icaModule: function() {
-            console.log(this.$store.state.modules);
             if (this.$store.state.modules.length >= 3) {
                 return this.$store.state.modules[2];
             }else{

@@ -76,7 +76,7 @@ modules = [
         'id': 3,
         'name': 'Connectivity',
         'description': 'This module calculates connectivity',
-        'plotConnectivity': '/static/2/plotConnectivity.png',
+        'plotConnectivity': '/static/3/plotConnectivity.png',
         'scalings': 0.00000003,
         'plotDuration': 3,
         'type': 'connectivity',
@@ -191,9 +191,9 @@ async def process_module_ica(data,module) -> bool:
     # output data of previous module
     raw_tmp = data
     raw_tmp.filter(l_freq=1, h_freq=None)
-    ica = mne.preprocessing.ICA(method="picard") 
-    fit_params={"extended": True}
     random_state=1
+    ica = mne.preprocessing.ICA(method="picard", random_state=random_state) 
+    fit_params={"extended": True}
     ica.fit(raw_tmp)
 
     fig = ica.plot_components(inst=raw_tmp, picks=range(25));
@@ -248,7 +248,7 @@ def process_module_connectivity(data,module) -> bool:
     )
 
     # Now, visualize the connectivity in 3D:
-    fig = plot_sensors_connectivity(epochs.info, con.get_data(output="dense")[:, :, 0]);
+    fig = plot_sensors_connectivity("./static/3/plotConnectivity.png", epochs.info, con.get_data(output="dense")[:, :, 0]);
     # close the figure to avoid showing it
     # pv.close_all()
     # fig.scene.save('./static/3/plotConnectivity.png')

@@ -24,7 +24,7 @@ FIDUCIAL_ORDER = (FIFF.FIFFV_POINT_LPA, FIFF.FIFFV_POINT_NASION, FIFF.FIFFV_POIN
 
 @fill_doc
 def plot_sensors_connectivity(
-    info, con, picks=None, cbar_label="Connectivity", n_con=20, cmap="RdBu"
+    save_filename, info, con, picks=None, cbar_label="Connectivity", n_con=20, cmap="RdBu"
 ):
     """Visualize the sensor connectivity in 3D.
 
@@ -50,8 +50,6 @@ def plot_sensors_connectivity(
     fig : instance of Renderer
         The 3D figure.
     """
-
-
     _validate_type(info, "info")
 
     from mne.viz.backends.renderer import _get_renderer
@@ -61,7 +59,7 @@ def plot_sensors_connectivity(
     if isinstance(con, BaseConnectivity):
         con = con.get_data()
 
-    plotter = pv.Plotter(off_screen=True, notebook=False)
+    # plotter = pv.Plotter(off_screen=True, notebook=False)
 
     renderer = _get_renderer(size=(600, 600), bgcolor=(0.5, 0.5, 0.5))
 
@@ -132,17 +130,8 @@ def plot_sensors_connectivity(
         distance=0.76,
         focalpoint=np.array([-3.9e-4, -8.5e-3, -1e-2]),
     )
-    # renderer.show()
-    # return renderer.scene()
 
-    # save the image
-    renderer.set(off_screen=True)
-    renderer.show()
-    renderer.screenshot('output_conn.png')
-    # return renderer.scene()
-
-    # plotter.add_mesh(renderer.scene(), show_edges=True)
-
-    # plotter.screenshot('output_conn.png')
+    renderer.plotter.off_screen = True
+    renderer.plotter.screenshot(save_filename)
 
     return True

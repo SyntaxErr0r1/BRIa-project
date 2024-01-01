@@ -1,6 +1,8 @@
 import pyvista as pv
 import numpy as np
 
+from mne.viz.backends.renderer import _get_renderer
+
 
 plotter = pv.Plotter(off_screen=True)
 
@@ -19,3 +21,8 @@ plotter.screenshot('output.png')
 
 # create a screenshot
 # grid.screenshot("grid.png")
+
+renderer = _get_renderer(size=(600, 600), bgcolor=(0.5, 0.5, 0.5))
+
+renderer.plotter.off_screen = True
+print(renderer)
