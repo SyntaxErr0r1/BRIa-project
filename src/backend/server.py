@@ -13,10 +13,17 @@ from io import BufferedReader, BytesIO
 from flask import Flask, flash, request, redirect, url_for
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from mne_connectivity import spectral_connectivity_epochs
+from mne.datasets import sample
+# from mne_connectivity.viz import plot_sensors_connectivity
+from connectivity import plot_sensors_connectivity
+# from mayavi import mlab
+import pyvista as pv
 
 UPLOAD_FOLDER = './uploads'
 ALLOWED_EXTENSIONS = {'mat'}
 
+pv.set_jupyter_backend(None)
 plt.switch_backend('agg')
 
 Session = sessionmaker(bind=engine)
@@ -31,8 +38,10 @@ modules = [
         'dataId': 1,
         'montageId': 'biosemi64',
         'plotUrl': '/static/0/plot.png',
+        'scalings': 'auto',
+        'plotDuration': 3,
         'type': 'loadData',
-        'dataOutput': [],
+        'dataOutput': None,
         'channelNames': [],
         'statusProcessing': False,
     },
@@ -42,8 +51,10 @@ modules = [
         'description': 'This module applies high pass filter to the data',
         'cutOff': 1,
         'plotUrl': '/static/1/plot.png',
+        'scalings': 0.00000003,
+        'plotDuration': 3,
         'type': 'highPassFilter',
-        'dataOutput': [],
+        'dataOutput': None,
         'channelNames': [],
         'statusProcessing': False,
     },
@@ -52,14 +63,39 @@ modules = [
         'name': 'ICA',
         'description': 'This module applies ICA to the data',
         'componentsPlotUrl': '/static/2/components.png',
-        'removedComponents': [1, 2, 3],
+        'removedComponents': [0,1,2,9,10,17],
         'plotUrl': '/static/2/plot.png',
+        'scalings': 0.00000003,
+        'plotDuration': 3,
         'type': 'ica',
-        'dataOutput': [],
+        'dataOutput': None,
+        'channelNames': [],
+        'statusProcessing': False,
+    },
+    {
+        'id': 3,
+        'name': 'Connectivity',
+        'description': 'This module calculates connectivity',
+        'plotConnectivity': '/static/2/plotConnectivity.png',
+        'scalings': 0.00000003,
+        'plotDuration': 3,
+        'type': 'connectivity',
+        'dataOutput': None,
         'channelNames': [],
         'statusProcessing': False,
     },
 ]
+
+def get_scalings(module):
+    scalings = 'auto'
+    try:
+        if type(module['scalings']) == str:
+            scalings = module['scalings']
+        elif type(module['scalings']) == float:
+            scalings = dict(eeg=module['scalings'])
+    except:
+        pass
+    return scalings
 
 def create_dir_structure():
     """Creates directory structure for storing static files"""
@@ -130,7 +166,8 @@ async def process_module_loadData(data, module) -> bool:
     module['channelNames'] = channel_names
 
     # save plot to static/0/plot.png
-    fig = raw.plot( title="Before", scalings='auto');
+    scalings = get_scalings(module)
+    fig = raw.plot( title="Before", scalings=scalings, duration=module['plotDuration']);
     fig.savefig('./static/0/plot.png')
 
     return module
@@ -138,10 +175,12 @@ async def process_module_loadData(data, module) -> bool:
 async def process_module_highPassFilter(data,module) -> bool:
     # output data of previous module
 
-    data = data.filter(l_freq=1.0, h_freq=None)
+    data = data.filter(l_freq=module['cutOff'], h_freq=None)
+    
+    scalings = get_scalings(module)
 
     # save plot to static/1/plot.png
-    fig = data.plot( title="Before", scalings='auto');
+    fig = data.plot( title="Before", scalings=scalings, duration=module['plotDuration']);
     fig.savefig('./static/1/plot.png')
 
     module['dataOutput'] = data
@@ -164,15 +203,59 @@ async def process_module_ica(data,module) -> bool:
         print("Error saving components plot")
 
 
-    ica.exclude = [0,1,2,9,10,17]
+    ica.exclude = module['removedComponents']
     raw_corrected = raw_tmp
 
+    scalings = get_scalings(module)
+
     ica.apply(raw_corrected)
-    fig = raw_corrected.plot(n_channels=32, title="After", scalings='auto');
+    fig = raw_corrected.plot(n_channels=32, title="After", scalings=scalings, duration=module['plotDuration']);
     fig.savefig('./static/2/plot.png')
 
     module['dataOutput'] = raw_corrected
 
+    return module
+
+def process_module_connectivity(data,module) -> bool:
+    raw_corrected = data
+    epochs = mne.make_fixed_length_epochs(raw=raw_corrected, duration=0.5, overlap=0.25)
+    times = epochs.times
+    ch_names = epochs.ch_names
+
+
+    # Pick MEG gradiometers
+    picks = mne.pick_types(
+        raw_corrected.info, meg=False, eeg=True, stim=False, eog=False
+    )
+
+    # Compute connectivity for band containing the evoked response.
+    # We exclude the baseline period:
+    fmin, fmax = 4.0, 9.0
+    sfreq = raw_corrected.info["sfreq"]  # the sampling frequency
+    tmin = 0.0  # exclude the baseline period
+    epochs.load_data().pick_types(eeg=True)
+    con = spectral_connectivity_epochs(
+        epochs,
+        method="pli",
+        mode="multitaper",
+        sfreq=sfreq,
+        fmin=fmin,
+        fmax=fmax,
+        faverage=True,
+        tmin=tmin,
+        mt_adaptive=False,
+        n_jobs=1,
+    )
+
+    # Now, visualize the connectivity in 3D:
+    fig = plot_sensors_connectivity(epochs.info, con.get_data(output="dense")[:, :, 0]);
+    # close the figure to avoid showing it
+    # pv.close_all()
+    # fig.scene.save('./static/3/plotConnectivity.png')
+    # fig.savefig('./static/3/plotConnectivity.png')
+    print(str(fig))
+
+    # output data of previous module
     return module
 
 def process_modules():
@@ -190,14 +273,39 @@ def update_module(module_id):
     # modules[module_id] = module
     return stringify_modules(module)
 
+def get_latest_data(module_id):
+    """Returns the data output of the previous module
+    If the previous module data does not have data yet, it will get the data from the module before that"""
+    if module_id >= 1:
+        previous_module_data = modules[module_id - 1]['dataOutput']
+        if previous_module_data is not None:
+            return deepcopy(previous_module_data)
+        else:
+            return get_latest_data(module_id - 1)
+    else:
+        return None
+    
+@app.route('/data/', methods=['GET'])
+@app.route('/data', methods=['GET'])
+def get_data():
+    modules_data = ""
+    for module in modules:
+        if module['dataOutput'] is None:
+            modules_data += str(module["id"])+" None" + "\n"
+        else:
+            modules_data += str(module["id"])+" "+str(len(module["dataOutput"])) + "\n"
+
+    return modules_data
+
 @app.route('/modules/<int:module_id>/process/', methods=['POST'])
 async def process_module(module_id):
 
-    if module_id >= 1:
-        data = deepcopy(modules[module_id - 1]['dataOutput'])
-    else:
-        data = None
+    # if module_id >= 1:
+    #     data = deepcopy(modules[module_id - 1]['dataOutput'])
+    # else:
+    #     data = None
 
+    data = get_latest_data(module_id)
     
     module = modules[module_id]
     module['statusProcessing'] = True
@@ -208,6 +316,8 @@ async def process_module(module_id):
         result = await process_module_highPassFilter(data,module)
     elif module['type'] == 'ica':
         result = await process_module_ica(data,module)
+    elif module['type'] == 'connectivity':
+        result = process_module_connectivity(data,module)
 
     result['statusProcessing'] = False
     modules[module_id] = result

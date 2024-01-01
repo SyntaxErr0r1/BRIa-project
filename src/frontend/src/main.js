@@ -5,7 +5,6 @@ import App from './App.vue'
 import PrimeVue from 'primevue/config'
 import Menubar from 'primevue/menubar'
 import 'primevue/resources/themes/lara-light-green/theme.css'
-import VueRouter from 'vue-router'
 import router from "./router"
 import ToastService from 'primevue/toastservice';
 

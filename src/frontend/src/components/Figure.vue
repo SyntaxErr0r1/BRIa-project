@@ -3,7 +3,8 @@
         <!-- <ProgressSpinner  /> -->
         <ProgressSpinner class="progress-spinner" strokeWidth="8" fill="var(--surface-ground)"
 animationDuration="1s" aria-label="Custom ProgressSpinner" v-if="loading" />
-        <img :src="src" alt="Figure">
+        <img :src="src+'?rnd='+cacheKey" alt="Figure" v-if="!disabled">
+        <img src="../assets/placeholder.svg" alt="Figure Placehorder" v-if="disabled">
     </div>
 </template>
 <script>
@@ -13,6 +14,12 @@ export default {
     components: {
         ProgressSpinner,
     },
+    data: () => {
+        return {
+            cacheKey: +new Date(),
+            interval: null,
+        }
+    },
     props: {
         src: {
             required: true,
@@ -21,6 +28,20 @@ export default {
             type: Boolean,
             default: false,
         },
+        disabled: {
+            type: Boolean,
+            default: false,
+        },
+    },
+
+    created() {
+        this.interval = setInterval(() => {
+            this.cacheKey = +new Date();
+        }, 1000);
+    },
+
+    destroyed() {
+        clearInterval(this.interval);
     },
 }
 </script>

@@ -1,5 +1,6 @@
 import { createStore } from 'vuex'
 import axios from 'axios'
+import { useToast } from 'primevue/usetoast';
 
 const protocol = 'http'
 const port = 8888
@@ -56,8 +57,16 @@ const store = createStore({
         },
 
         async processModule (context, module) {
-            await axios.post(`/modules/${module.id}/process/`)
-            context.commit('loadModules')
+            return new Promise((resolve, reject) => {
+                axios.post(`/modules/${module.id}/process/`, module)
+                    .then(response => {
+                        context.commit('loadModules')
+                        resolve(response)
+                    })
+                    .catch(error => {
+                        reject(error)
+                    })
+            })
         }
         
     }
